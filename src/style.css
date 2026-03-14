@@ -118,3 +118,34 @@ body {
 .overlay.active {
   display: block;
 }
+
+.cards {
+    display: grid;
+    place-items: center;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 1.5rem;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  align-items: flex-top;
+}
+
+#chart {
+  width: 100%;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+}
