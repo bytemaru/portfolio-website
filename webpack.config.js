@@ -22,9 +22,10 @@ module.exports = {
         exclude: /node_modules/,
         use: {
           loader: "babel-loader",
-          options: {
-            presets: ["@babel/preset-env"],
-          },
+            options: {
+              presets: ["@babel/preset-env"],
+              sourceType: "module"
+            },
         },
       },
       {
@@ -41,6 +42,10 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",  // твой html-шаблон
     }),
+  new HtmlWebpackPlugin({
+    template: "./public/storytelling.html",
+    filename: "storytelling.html",
+  }),
   ],
   resolve: {
     extensions: [".js"],                // чтобы можно было писать import без расширения
