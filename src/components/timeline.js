@@ -5,7 +5,7 @@ const margin = {
   left: 40
 };
 
-const aspectRatio = 4 / 3;
+const aspectRatio = 16 / 5;
 
 const container = d3.select("#chart");
 
@@ -22,6 +22,9 @@ const x = d3.scaleTime()
     new Date("2010-01-01"),
     new Date("2025-12-31")
   ]);
+
+const zoom = d3.zoom()
+  .on("zoom", zoomed)
 
 function getAdaptiveAxis(scale) {
   const [start, end] = scale.domain();
@@ -68,6 +71,7 @@ function render() {
   const containerNode = container.node();
   const width = containerNode.offsetWidth;
   const height = width / aspectRatio;
+  console.log('width:', width)  // ← add this
 
   svg
     .attr("width", width)
@@ -79,16 +83,15 @@ function render() {
     .attr("transform", `translate(0, ${height - margin.bottom})`)
     .call(getAdaptiveAxis(x));
 
-  const zoom = d3.zoom()
+  zoom
     .scaleExtent([1, 40])
-    .translateExtent([[0,0],[width,height]])
-    .on("zoom", zoomed);
+    .translateExtent([[0, 0], [width, height]]);
 
   svg.call(zoom);
 }
 
-render();
-window.addEventListener("resize", render);
+requestAnimationFrame(render)
+window.addEventListener("resize", render)
 
 console.log(document.querySelector("#chart").offsetWidth
 )
