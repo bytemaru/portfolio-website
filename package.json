@@ -69,6 +69,7 @@
     "css-select": "^4.3.0",
     "css-what": "^6.2.2",
     "cssesc": "^3.0.0",
+    "d3": "^7.9.0",
     "debug": "^4.4.3",
     "default-browser": "^5.2.1",
     "default-browser-id": "^5.0.0",

@@ -140,6 +140,12 @@ body {
   margin-bottom: 0.5rem;
 }
 
+.card-work-at {
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+
 .card-title {
   font-size: 1.1rem;
   font-weight: 600;

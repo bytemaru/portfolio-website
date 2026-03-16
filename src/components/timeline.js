@@ -1,3 +1,5 @@
+import * as d3 from 'd3';
+
 const margin = {
   top: 20,
   right: 20,
