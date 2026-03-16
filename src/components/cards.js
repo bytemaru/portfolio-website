@@ -21,9 +21,3 @@ export function renderCards(date) {
   link.textContent = job.projectLabel
 
 }
-
-// temporary test — remove later
-import { jobs } from '../data/jobs.js'
-document.addEventListener('DOMContentLoaded', () => {
-  renderCards(jobs[0].startDate)
-})
