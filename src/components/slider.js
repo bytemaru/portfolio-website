@@ -20,4 +20,8 @@ slider.addEventListener('input', function() {
   renderCards(date)
 })
 
+window.addEventListener('scroll', function(e) {
+  console.log(e);
+})
+
 renderCards(maxDate)
