@@ -11,9 +11,12 @@ module.exports = {
   },
   mode: "development",                  // можно поменять на "production"
   devServer: {
-    static: "./dist",
-    hot: true,
-    port: 3000,                         // сайт откроется на http://localhost:3000
+  static: [
+    { directory: path.join(__dirname, 'dist') },
+    { directory: path.join(__dirname, 'public') },
+  ],
+  hot: true,
+  port: 3000,                       // сайт откроется на http://localhost:3000
   },
   module: {
     rules: [

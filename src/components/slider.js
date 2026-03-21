@@ -2,6 +2,8 @@ import { jobs } from '../data/jobs.js'
 import { renderCards } from './cards.js'
 
 const slider = document.getElementById('timeline-slider')
+
+if (slider) {
 const dateLabel = document.getElementById('timeline-date')
 
 const minDate = jobs[0].startDate
@@ -25,3 +27,4 @@ window.addEventListener('scroll', function(e) {
 })
 
 renderCards(maxDate)
+}

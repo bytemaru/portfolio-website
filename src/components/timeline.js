@@ -1,5 +1,9 @@
 import * as d3 from 'd3';
 
+const chartEl = document.getElementById('chart')
+
+if (chartEl) {
+
 const margin = {
   top: 20,
   right: 20,
@@ -95,5 +99,24 @@ function render() {
 requestAnimationFrame(render)
 window.addEventListener("resize", render)
 
-console.log(document.querySelector("#chart").offsetWidth
-)
+//console.log(document.querySelector("#chart").offsetWidth)
+
+/*Adding data into the visual*/
+
+async function loadData() {
+  try {
+    const [events, metrics] = await Promise.all([
+        d3.json('/data/events.json'),
+        d3.json('/data/silver_housing_affordability.json')
+    ])
+    console.log('events:', events.length)
+    console.log('metrics:', metrics.length)
+
+
+  } catch (error) {
+    console.error("Could not load the data:", error);
+  }
+}
+
+loadData();
+}
