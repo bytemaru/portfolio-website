@@ -257,3 +257,37 @@ html, body {
   pointer-events: none;
   z-index: 300;
 }
+
+#tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #111;
+  color: #eee;
+  padding: 10px 14px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: 11px;
+  line-height: 1.8;
+  opacity: 0;
+  transition: opacity .12s;
+  z-index: 300;
+  min-width: 200px;
+  border: 1px solid #333;
+}
+
+.tt-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  color: #aaa;
+}
+
+.tt-val {
+  color: #eee;
+}

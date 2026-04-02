@@ -25,7 +25,7 @@ const gx = svg.append("g");
 
 const x = d3.scaleTime()
   .domain([
-    new Date("2010-01-01"),
+    new Date("2020-01-01"),
     new Date("2025-12-31")
   ]);
 
@@ -71,6 +71,13 @@ function zoomed(event) {
 
   gx.call(getAdaptiveAxis(newX));
 
+  svg.selectAll('.event-line')
+      .attr('x1', d => newX(d.date))
+      .attr('x2', d => newX(d.date))
+
+  svg.selectAll('.event-dot')
+    .attr('cx', d => newX(d.date))
+
 }
 
 function render() {
@@ -109,14 +116,101 @@ async function loadData() {
         d3.json('/data/events.json'),
         d3.json('/data/silver_housing_affordability.json')
     ])
-    console.log('events:', events.length)
-    console.log('metrics:', metrics.length)
+    //console.log('events:', events.length)
+    //console.log('metrics:', metrics.length)
 
+    const parseDate = d3.timeParse('%d/%m/%Y')
 
-  } catch (error) {
-    console.error("Could not load the data:", error);
+    const parsedEvents = events.map(e => ({
+      ...e,
+      date: parseDate(e.date)
+    })).filter(e => e.date !== null)
+
+    console.log('parsed events:', parsedEvents.length)
+    console.log('sample:', parsedEvents[0])
+
+  function renderEvents(events) {
+
+    const height = +svg.attr('height')
+    const width = +svg.attr('width')
+
+    const eventsGroup = svg.append('g').attr('class', 'g-events')
+
+   const importanceHeight = { low: 30, medium: 60, high: 100 }
+    const importanceColor = {
+      low: '#0088FF',
+      medium: '#FFCC00',
+      high: '#FF383C'
+    }
+
+    eventsGroup.selectAll('.event-line')
+      .data(parsedEvents)
+      .enter()
+      .append('line')
+      .attr('class', 'event-line')
+      .attr('x1', d => x(d.date))
+      .attr('x2', d => x(d.date))
+      .attr('y1', d => height - margin.bottom - (importanceHeight[d.importance] || 10))
+      .attr('y2', d => height - margin.bottom)
+      .attr('stroke', d => importanceColor[d.importance] || '#ccc')
+      .attr('stroke-width', 1)
+
+    eventsGroup.selectAll('.event-dot')
+      .data(parsedEvents)
+      .enter()
+      .append('circle')
+      .attr('class', 'event-dot')
+      .attr('cx', d => x(d.date))
+      .attr('cy', d => height - margin.bottom - (importanceHeight[d.importance] || 10))
+      .attr('r', d => d.importance === 'high' ? 4 : d.importance === 'medium' ? 3 : 2)
+      .attr('fill', d => importanceColor[d.importance] || '#ccc')
+
+      const tooltip = d3.select('#tooltip')
+
+      eventsGroup.selectAll('.event-dot')
+        .on('mouseover', function(event, d) {
+          d3.select(this).attr('r', 7)
+          tooltip
+            .style('opacity', 1)
+            .html(`
+              <div class="tt-head">${d.event}</div>
+              <div class="tt-row">
+                <span>Date</span>
+                <span class="tt-val">${d.date.toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric'})}</span>
+              </div>
+              <div class="tt-row">
+                <span>Zone</span>
+                <span class="tt-val">${d.zone}</span>
+              </div>
+              <div class="tt-row">
+                <span>Actual</span>
+                <span class="tt-val">${d.actual || '—'}</span>
+              </div>
+              <div class="tt-row">
+                <span>Forecast</span>
+                <span class="tt-val">${d.forecast || '—'}</span>
+              </div>
+              <div class="tt-row">
+                <span>Previous</span>
+                <span class="tt-val">${d.previous || '—'}</span>
+              </div>
+            `)
+        })
+        .on('mousemove', function(event) {
+          tooltip
+            .style('left', (event.pageX + 14) + 'px')
+            .style('top', (event.pageY - 10) + 'px')
+        })
+        .on('mouseleave', function(event, d) {
+          d3.select(this).attr('r', d.importance === 'high' ? 4 : d.importance === 'medium' ? 3 : 2)
+          tooltip.style('opacity', 0)
+        })
   }
-}
 
+  renderEvents(events)
+   } catch (error) {
+      console.error("Could not load the data:", error);
+    }
+}
 loadData();
 }
