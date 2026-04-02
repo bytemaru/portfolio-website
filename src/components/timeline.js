@@ -11,6 +11,9 @@ const margin = {
   left: 40
 };
 
+let y;
+let line;
+
 const aspectRatio = 16 / 5;
 
 const container = d3.select("#chart");
@@ -77,6 +80,11 @@ function zoomed(event) {
 
   svg.selectAll('.event-dot')
     .attr('cx', d => newX(d.date))
+
+svg.selectAll('.metrics-line')
+  .attr('d', ([country, rows]) =>
+    line.x(d => newX(d.date))(rows)
+  )
 }
 
 function render() {
@@ -253,6 +261,47 @@ async function loadData() {
   }
 
   renderEvents(events)
+
+  function renderMetrics(metrics) {
+    const metricsGroup = svg.append('g').attr('class', 'g-metrics');
+
+    const metricKey = 'price_to_income_ratio';
+
+    const parsedMetrics = metrics
+      .map(d => ({
+        ...d,
+        date: new Date(+d.year, 11, 1),
+        value: +d[metricKey]
+      }))
+      .filter(d => d.date !== null && !Number.isNaN(d.value) && d.date > new Date('2018-12-31'))
+      .filter(d =>
+        d.country &&
+        uniqueZones.some(z => z.toLowerCase() === d.country.toLowerCase())
+      );
+    const groupedMetrics = d3.group(parsedMetrics, d => d.country);
+
+    y = d3.scaleLinear()
+      .domain(d3.extent(parsedMetrics, d => d.value))
+      .nice()
+      .range([120, 20]);
+
+    line = d3.line()
+      .x(d => x(d.date))
+      .y(d => y(d.value));
+
+    metricsGroup.selectAll('.metrics-line')
+      .data(Array.from(groupedMetrics))
+      .enter()
+      .append('path')
+      .attr('class', 'metrics-line')
+      .attr('fill', 'none')
+      .attr('stroke', 'steelblue')
+      .attr('stroke-width', 1.5)
+      .attr('d', ([country, rows]) => line(rows));
+  }
+
+  renderMetrics(metrics)
+
    } catch (error) {
       console.error("Could not load the data:", error);
     }
