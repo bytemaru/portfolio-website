@@ -66,18 +66,17 @@ function getAdaptiveAxis(scale) {
 }
 
 function zoomed(event) {
+  const transform = event.transform
+  const newX = transform.rescaleX(x)
 
-  const newX = event.transform.rescaleX(x);
-
-  gx.call(getAdaptiveAxis(newX));
+  gx.call(getAdaptiveAxis(newX))
 
   svg.selectAll('.event-line')
-      .attr('x1', d => newX(d.date))
-      .attr('x2', d => newX(d.date))
+    .attr('x1', d => newX(d.date))
+    .attr('x2', d => newX(d.date))
 
   svg.selectAll('.event-dot')
     .attr('cx', d => newX(d.date))
-
 }
 
 function render() {
@@ -113,7 +112,7 @@ window.addEventListener("resize", render)
 async function loadData() {
   try {
     const [events, metrics] = await Promise.all([
-        d3.json('/data/events.json'),
+        d3.json('/data/events_with_category.json'),
         d3.json('/data/silver_housing_affordability.json')
     ])
     //console.log('events:', events.length)
@@ -126,8 +125,50 @@ async function loadData() {
       date: parseDate(e.date)
     })).filter(e => e.date !== null)
 
+    const uniqueZones = [...new Set(parsedEvents.map(e => e.zone))]
+    console.log('zones:', uniqueZones)
+
+        const uniqueEvents = [...new Set(parsedEvents.map(e => e.event))]
+        console.log('events:', uniqueEvents)
+
     console.log('parsed events:', parsedEvents.length)
     console.log('sample:', parsedEvents[0])
+
+    const selectZone = document.getElementById('zone-select')
+
+    uniqueZones.forEach(zone => {
+      const option = document.createElement('option')
+      option.value = zone
+      option.textContent = zone.charAt(0).toUpperCase() + zone.slice(1)
+      selectZone.appendChild(option)
+    })
+
+    const uniqueCategories = [...new Set(parsedEvents.map(e => e.category))]
+
+    const selectCategory = document.getElementById('category-select')
+        uniqueCategories.forEach(category => {
+          const option = document.createElement('option')
+          option.value = category
+          option.textContent = category
+          selectCategory.appendChild(option)
+        })
+
+    function applyFilters() {
+      const selectedZone = document.getElementById('zone-select').value
+      const selectedCategory = document.getElementById('category-select').value
+
+      const isVisible = d =>
+        (selectedZone === 'all' || d.zone === selectedZone) &&
+        (selectedCategory === 'all' || d.category === selectedCategory)
+
+      svg.selectAll('.event-line, .event-dot')
+        .style('opacity', d => isVisible(d) ? 1 : 0)
+        .style('pointer-events', d => isVisible(d) ? 'all' : 'none')
+    }
+
+    selectZone.addEventListener('change', applyFilters)
+    selectCategory.addEventListener('change', applyFilters)
+
 
   function renderEvents(events) {
 
@@ -169,6 +210,10 @@ async function loadData() {
 
       eventsGroup.selectAll('.event-dot')
         .on('mouseover', function(event, d) {
+        const selected = document.getElementById('zone-select').value
+        if (selected !== 'all' && d.zone !== selected) return
+        const selectedCategory = document.getElementById('category-select').value
+        if (selectedCategory !== 'all' && d.category !== selectedCategory) return
           d3.select(this).attr('r', 7)
           tooltip
             .style('opacity', 1)
