@@ -13,6 +13,7 @@ const margin = {
 
 let y;
 let line;
+let groupedMetrics;
 
 const aspectRatio = 16 / 5;
 
@@ -81,10 +82,23 @@ function zoomed(event) {
   svg.selectAll('.event-dot')
     .attr('cx', d => newX(d.date))
 
-svg.selectAll('.metrics-line')
-  .attr('d', ([country, rows]) =>
-    line.x(d => newX(d.date))(rows)
-  )
+  const currentZone = document.getElementById('zone-select').value
+  const currentMetric = document.getElementById('metric-select').value
+
+  if (currentZone !== 'all' && groupedMetrics) {
+    const countryKey = [...groupedMetrics.keys()]
+      .find(k => k.toLowerCase() === currentZone)
+    const countryData = groupedMetrics.get(countryKey)
+
+    if (countryData) {
+      const metricLine = d3.line()
+        .x(d => newX(d.date))
+        .y(d => y(+d[currentMetric]))
+
+      svg.selectAll('.metrics-line')
+        .attr('d', metricLine(countryData))
+    }
+  }
 }
 
 function render() {
@@ -165,6 +179,9 @@ async function loadData() {
       const selectedZone = document.getElementById('zone-select').value
       const selectedCategory = document.getElementById('category-select').value
 
+      const selectedMetric = document.getElementById('metric-select').value
+      updateMetricLine(selectedZone, selectedMetric)
+
       const isVisible = d =>
         (selectedZone === 'all' || d.zone === selectedZone) &&
         (selectedCategory === 'all' || d.category === selectedCategory)
@@ -176,6 +193,8 @@ async function loadData() {
 
     selectZone.addEventListener('change', applyFilters)
     selectCategory.addEventListener('change', applyFilters)
+    document.getElementById('metric-select')
+      .addEventListener('change', applyFilters)
 
 
   function renderEvents(events) {
@@ -263,6 +282,10 @@ async function loadData() {
   renderEvents(events)
 
   function renderMetrics(metrics) {
+
+    const containerNode = container.node();
+    const width = containerNode.offsetWidth;
+    const height = width / aspectRatio;
     const metricsGroup = svg.append('g').attr('class', 'g-metrics');
 
     const metricKey = 'price_to_income_ratio';
@@ -278,17 +301,30 @@ async function loadData() {
         d.country &&
         uniqueZones.some(z => z.toLowerCase() === d.country.toLowerCase())
       );
-    const groupedMetrics = d3.group(parsedMetrics, d => d.country);
 
+    groupedMetrics = d3.group(parsedMetrics, d => d.country);
+
+    const allValues = parsedMetrics.flatMap(d => [
+      +d.price_to_income_ratio,
+      +d.affordability_index,
+      +d.mortgage_as_percentage_of_income,
+      +d.gross_rental_yield_city_centre,
+      +d.price_to_rent_ratio_city_centre
+    ]).filter(v => !isNaN(v))
+
+/*
     y = d3.scaleLinear()
-      .domain(d3.extent(parsedMetrics, d => d.value))
+      .domain(d3.extent(allValues))
       .nice()
-      .range([120, 20]);
+      .range([height * 0.3, 20])
+*/
 
     line = d3.line()
       .x(d => x(d.date))
       .y(d => y(d.value));
 
+
+    /*
     metricsGroup.selectAll('.metrics-line')
       .data(Array.from(groupedMetrics))
       .enter()
@@ -297,7 +333,35 @@ async function loadData() {
       .attr('fill', 'none')
       .attr('stroke', 'steelblue')
       .attr('stroke-width', 1.5)
-      .attr('d', ([country, rows]) => line(rows));
+      .attr('d', ([country, rows]) => line(rows)); */
+  }
+
+  function updateMetricLine(selectedZone, metricKey) {
+    svg.selectAll('.metrics-line').remove()
+    if (selectedZone === 'all') return
+
+    const countryData = groupedMetrics.get(
+      [...groupedMetrics.keys()].find(k => k.toLowerCase() === selectedZone)
+    )
+    if (!countryData) return
+
+  const height = +svg.attr('height')
+  y = d3.scaleLinear()
+    .domain(d3.extent(countryData, d => +d[metricKey]))
+    .nice()
+    .range([height * 0.45, 20])
+
+  const metricLine = d3.line()
+    .x(d => x(d.date))
+    .y(d => y(+d[metricKey]))
+
+    svg.select('.g-metrics')
+      .append('path')
+      .attr('class', 'metrics-line')
+      .attr('fill', 'none')
+      .attr('stroke', '#34C759')
+      .attr('stroke-width', 1.5)
+      .attr('d', metricLine(countryData))
   }
 
   renderMetrics(metrics)
