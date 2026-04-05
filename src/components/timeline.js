@@ -13,6 +13,29 @@ const margin = {
   left: 40
 };
 
+const metricDescriptions = {
+  price_to_income_ratio: {
+    title: "Price to Income Ratio",
+    text: "Median property price divided by median household income. Higher values generally indicate less affordable housing."
+  },
+  affordability_index: {
+    title: "Affordability Index",
+    text: "A broad affordability measure showing how easily households can support housing costs. Higher values indicate better affordability."
+  },
+  mortgage_as_percentage_of_income: {
+    title: "Mortgage % of Income",
+    text: "Estimated share of household income needed for mortgage payments. Higher values indicate greater housing cost pressure."
+  },
+  gross_rental_yield_city_centre: {
+    title: "Rental Yield",
+    text: "Annual rental income as a percentage of property price. Higher yields suggest stronger rental returns relative to purchase price."
+  },
+  price_to_rent_ratio_city_centre: {
+    title: "Price to Rent Ratio",
+    text: "Property price divided by annual rent. Higher values suggest buying is relatively more expensive compared with renting."
+  }
+};
+
 let y;
 let line;
 let groupedMetrics;
@@ -434,6 +457,36 @@ async function loadData() {
   }
 
   renderMetrics(metrics)
+
+  const metricDescription = document.getElementById("metric-description");
+  const metricSelect = document.getElementById("metric-select");
+  const zoneSelect = document.getElementById("zone-select");
+
+  function updateMetricDescription() {
+    const metric = metricSelect.value;
+    const selectedZone = zoneSelect.value;
+    const info = metricDescriptions[metric];
+
+    if (!info) {
+      metricDescription.innerHTML = "";
+      return;
+    }
+
+    const extraNote = selectedZone === "all"
+      ? `<div class="metric-note">Select a country to display the metric line on the chart.</div>`
+      : "";
+
+    metricDescription.innerHTML = `
+      <div class="metric-description-title">${info.title}</div>
+      <div class="metric-description-text">${info.text}</div>
+      ${extraNote}
+    `;
+  }
+
+  metricSelect.addEventListener("change", updateMetricDescription);
+  zoneSelect.addEventListener("change", updateMetricDescription);
+
+  updateMetricDescription()
 
    } catch (error) {
       console.error("Could not load the data:", error);

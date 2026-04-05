@@ -399,3 +399,59 @@ html, body {
     padding: 0 1rem 1rem;
   }
 }
+
+.metric-wrapper{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-top: 4px;
+  position:relative;
+}
+
+.metric-info{
+  font-size:14px;
+  color:#666;
+  cursor:help;
+  position:relative;
+}
+
+.metric-tooltip{
+  position:absolute;
+  left:18px;
+  top:20px;
+  width:220px;
+  background:#111;
+  color:white;
+  font-size:12px;
+  padding:8px 10px;
+  border-radius:6px;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.15s ease;
+  z-index:10;
+}
+
+.metric-description {
+  margin-top: 8px;
+  max-width: 440px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #555;
+}
+
+.metric-description-title {
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.metric-description-text {
+  color: #666;
+}
+
+.metric-note {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+}
