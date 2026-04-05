@@ -3,7 +3,8 @@ import * as d3 from "d3";
 const chartEl = document.getElementById("chart");
 
 if (chartEl) {
-  let xCurrent = null;
+  //let xCurrent = null;
+  let currentTransform = null;
 
   const margin = {
     top: 20,
@@ -57,6 +58,13 @@ if (chartEl) {
 
   const zoom = d3.zoom().on("zoom", zoomed);
 
+  function getChartSize() {
+    const containerNode = container.node();
+    const width = containerNode.offsetWidth;
+    const height = Math.max(360, Math.min(width / aspectRatio, 620));
+    return { width, height };
+  }
+
   function getAdaptiveAxis(scale) {
     const [start, end] = scale.domain();
     const spanMs = end - start;
@@ -94,11 +102,13 @@ if (chartEl) {
       .tickFormat(d3.timeFormat("%d %b"));
   }
 
-  function zoomed(event) {
-    const transform = event.transform;
+  function getCurrentXScale() {
+    return currentTransform ? currentTransform.rescaleX(x) : x;
+  }
 
-    const newX = transform.rescaleX(x);
-    xCurrent = transform.rescaleX(x);
+  function zoomed(event) {
+    currentTransform = event.transform;
+    const newX = currentTransform.rescaleX(x);
 
     gx.call(getAdaptiveAxis(newX));
 
@@ -119,9 +129,10 @@ if (chartEl) {
       const countryData = groupedMetrics.get(countryKey);
 
       if (countryData) {
+      const scale = getCurrentXScale();
         const metricLine = d3
           .line()
-          .x((d) => newX(d.date))
+          .x((d) => scale(d.date))
           .y((d) => y(+d[currentMetric]));
 
         svg.selectAll(".metrics-line").attr("d", metricLine(countryData));
@@ -129,27 +140,154 @@ if (chartEl) {
     }
   }
 
-  function render() {
-    const containerNode = container.node();
-    const width = containerNode.offsetWidth;
-    const height = width / aspectRatio;
-    //console.log("width:", width);
+      function updateMetricLine(selectedZone, metricKey) {
+          svg.selectAll(".metrics-line").remove();
+          svg.selectAll(".metrics-line-hover").remove();
+          svg.selectAll(".crosshair").remove();
+        if (selectedZone === "all") return;
 
-    svg.attr("width", width).attr("height", height);
+        const countryData = groupedMetrics.get(
+          [...groupedMetrics.keys()].find(
+            (k) => k.toLowerCase() === selectedZone,
+          ),
+        );
+        if (!countryData) return;
 
-    x.range([margin.left, width - margin.right]);
+        countryData.sort((a, b) => d3.ascending(a.date, b.date));
 
-    gx.attr("transform", `translate(0, ${height - margin.bottom})`).call(
-      getAdaptiveAxis(x),
-    );
+        const height = +svg.attr("height");
+        y = d3
+          .scaleLinear()
+          .domain(d3.extent(countryData, (d) => +d[metricKey]))
+          .nice()
+          .range([height * 0.45, 20]);
 
-    zoom.scaleExtent([1, 40]).translateExtent([
-      [0, 0],
-      [width, height],
-    ]);
+        const scale = getCurrentXScale();
 
-    svg.call(zoom);
+        const metricLine = d3
+          .line()
+          .x((d) => scale(d.date))
+          .y((d) => y(+d[metricKey]));
+
+        svg
+          .select(".g-metrics")
+          .append("path")
+          .attr("class", "metrics-line")
+          .attr("fill", "none")
+          .attr("stroke", "#34C759")
+          .attr("stroke-width", 1.5)
+          .attr("d", metricLine(countryData));
+
+        const hoverPath = svg
+          .select(".g-metrics")
+          .append("path")
+          .datum(countryData)
+          .attr("class", "metrics-line-hover")
+          .attr("fill", "none")
+          .attr("stroke", "transparent")
+          .attr("stroke-width", 20)
+          .attr("d", metricLine)
+          .style("pointer-events", "stroke");
+
+        const crosshair = svg
+          .select(".g-metrics")
+          .append("line")
+          .attr("class", "crosshair")
+          .attr("stroke", "#999")
+          .attr("stroke-dasharray", "3,3")
+          .attr("stroke-width", 1)
+          .attr("y1", 0)
+          .attr("y2", +svg.attr("height") - margin.bottom)
+          .style("opacity", 0);
+
+        const bisectDate = d3.bisector((d) => d.date).left;
+
+        hoverPath
+          .on("mousemove", function (event) {
+            const scale = getCurrentXScale();
+            const [mouseX] = d3.pointer(event, svg.node());
+            const mouseDate = scale.invert(mouseX);
+
+            const idx = bisectDate(countryData, mouseDate);
+            const d0 = countryData[idx - 1];
+            const d1 = countryData[idx];
+            const d = !d0
+              ? d1
+              : !d1
+                ? d0
+                : mouseDate - d0.date > d1.date - mouseDate
+                  ? d1
+                  : d0;
+
+            if (!d) return;
+
+            const cx = scale(d.date);
+
+            crosshair.style("opacity", 1).attr("x1", cx).attr("x2", cx);
+
+            d3
+              .select("#tooltip")
+              .style("opacity", 1)
+              .style("left", event.pageX + 14 + "px")
+              .style("top", event.pageY - 10 + "px").html(`
+            <div class="tt-head">${d.country} · ${d.year}</div>
+            <div class="tt-row"><span>Price/Income</span><span class="tt-val">${(+d.price_to_income_ratio).toFixed(1)}</span></div>
+            <div class="tt-row"><span>Affordability</span><span class="tt-val">${(+d.affordability_index).toFixed(2)}</span></div>
+            <div class="tt-row"><span>Mortgage %</span><span class="tt-val">${(+d.mortgage_as_percentage_of_income).toFixed(1)}%</span></div>
+            <div class="tt-row"><span>Rental Yield</span><span class="tt-val">${(+d.gross_rental_yield_city_centre).toFixed(1)}%</span></div>
+            <div class="tt-row"><span>Price/Rent</span><span class="tt-val">${(+d.price_to_rent_ratio_city_centre).toFixed(1)}</span></div>
+          `);
+          })
+          .on("mouseleave", function () {
+            crosshair.style("opacity", 0);
+            d3.select("#tooltip").style("opacity", 0);
+          });
+      }
+
+function render() {
+  const { width, height } = getChartSize();
+
+  svg.attr("width", width).attr("height", height);
+
+  x.range([margin.left, width - margin.right]);
+
+  gx
+    .attr("transform", `translate(0, ${height - margin.bottom})`)
+    .call(getAdaptiveAxis(getCurrentXScale()));
+
+  zoom
+    .scaleExtent([1, 40])
+    .translateExtent([[0, 0], [width, height]]);
+
+  svg.call(zoom);
+
+  const importanceHeight = {
+    low: height * 0.08,
+    medium: height * 0.14,
+    high: height * 0.22,
+  };
+
+  svg.selectAll(".event-line")
+    .attr("x1", d => (getCurrentXScale())(d.date))
+    .attr("x2", d => (getCurrentXScale())(d.date))
+    .attr("y1", d => height - margin.bottom - (importanceHeight[d.importance] || 10))
+    .attr("y2", height - margin.bottom);
+
+  svg.selectAll(".event-dot")
+    .attr("cx", d => (getCurrentXScale())(d.date))
+    .attr("cy", d => height - margin.bottom - (importanceHeight[d.importance] || 10));
+
+  svg.selectAll(".crosshair")
+    .attr("y1", 0)
+    .attr("y2", height - margin.bottom);
+
+  const currentZone = document.getElementById("zone-select")?.value;
+  const currentMetric = document.getElementById("metric-select")?.value;
+
+  if (currentZone && currentMetric && currentZone !== "all" && groupedMetrics) {
+    updateMetricLine(currentZone, currentMetric);
   }
+}
 
   requestAnimationFrame(render);
   window.addEventListener("resize", render);
@@ -334,9 +472,8 @@ if (chartEl) {
       renderEvents(events);
 
       function renderMetrics(metrics) {
-        const containerNode = container.node();
-        const width = containerNode.offsetWidth;
-        const height = width / aspectRatio;
+        const { width, height } = getChartSize();
+
         const metricsGroup = svg.append("g").attr("class", "g-metrics");
 
         const metricKey = "price_to_income_ratio";
@@ -395,106 +532,6 @@ if (chartEl) {
       .attr('stroke', 'steelblue')
       .attr('stroke-width', 1.5)
       .attr('d', ([country, rows]) => line(rows)); */
-      }
-
-      function updateMetricLine(selectedZone, metricKey) {
-        svg.selectAll(".metrics-line").remove();
-        if (selectedZone === "all") return;
-
-        const countryData = groupedMetrics.get(
-          [...groupedMetrics.keys()].find(
-            (k) => k.toLowerCase() === selectedZone,
-          ),
-        );
-        if (!countryData) return;
-
-        countryData.sort((a, b) => d3.ascending(a.date, b.date));
-
-        const height = +svg.attr("height");
-        y = d3
-          .scaleLinear()
-          .domain(d3.extent(countryData, (d) => +d[metricKey]))
-          .nice()
-          .range([height * 0.45, 20]);
-
-        const metricLine = d3
-          .line()
-          .x((d) => x(d.date))
-          .y((d) => y(+d[metricKey]));
-
-        svg
-          .select(".g-metrics")
-          .append("path")
-          .attr("class", "metrics-line")
-          .attr("fill", "none")
-          .attr("stroke", "#34C759")
-          .attr("stroke-width", 1.5)
-          .attr("d", metricLine(countryData));
-
-        const hoverPath = svg
-          .select(".g-metrics")
-          .append("path")
-          .datum(countryData)
-          .attr("class", "metrics-line-hover")
-          .attr("fill", "none")
-          .attr("stroke", "transparent")
-          .attr("stroke-width", 20)
-          .attr("d", metricLine)
-          .style("pointer-events", "stroke");
-
-        const crosshair = svg
-          .select(".g-metrics")
-          .append("line")
-          .attr("class", "crosshair")
-          .attr("stroke", "#999")
-          .attr("stroke-dasharray", "3,3")
-          .attr("stroke-width", 1)
-          .attr("y1", 0)
-          .attr("y2", +svg.attr("height") - margin.bottom)
-          .style("opacity", 0);
-
-        const bisectDate = d3.bisector((d) => d.date).left;
-
-        hoverPath
-          .on("mousemove", function (event) {
-            const scale = xCurrent || x;
-            const [mouseX] = d3.pointer(event, svg.node());
-            const mouseDate = scale.invert(mouseX);
-
-            const idx = bisectDate(countryData, mouseDate);
-            const d0 = countryData[idx - 1];
-            const d1 = countryData[idx];
-            const d = !d0
-              ? d1
-              : !d1
-                ? d0
-                : mouseDate - d0.date > d1.date - mouseDate
-                  ? d1
-                  : d0;
-
-            if (!d) return;
-
-            const cx = scale(d.date);
-
-            crosshair.style("opacity", 1).attr("x1", cx).attr("x2", cx);
-
-            d3
-              .select("#tooltip")
-              .style("opacity", 1)
-              .style("left", event.pageX + 14 + "px")
-              .style("top", event.pageY - 10 + "px").html(`
-            <div class="tt-head">${d.country} · ${d.year}</div>
-            <div class="tt-row"><span>Price/Income</span><span class="tt-val">${(+d.price_to_income_ratio).toFixed(1)}</span></div>
-            <div class="tt-row"><span>Affordability</span><span class="tt-val">${(+d.affordability_index).toFixed(2)}</span></div>
-            <div class="tt-row"><span>Mortgage %</span><span class="tt-val">${(+d.mortgage_as_percentage_of_income).toFixed(1)}%</span></div>
-            <div class="tt-row"><span>Rental Yield</span><span class="tt-val">${(+d.gross_rental_yield_city_centre).toFixed(1)}%</span></div>
-            <div class="tt-row"><span>Price/Rent</span><span class="tt-val">${(+d.price_to_rent_ratio_city_centre).toFixed(1)}</span></div>
-          `);
-          })
-          .on("mouseleave", function () {
-            crosshair.style("opacity", 0);
-            d3.select("#tooltip").style("opacity", 0);
-          });
       }
 
       renderMetrics(metrics);

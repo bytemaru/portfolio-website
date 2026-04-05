@@ -40,6 +40,7 @@ nav a, .header-links a {
   color: inherit;
 }
 
+
 nav a:hover,
 .header-links a:hover {
   text-decoration: underline;
@@ -184,7 +185,8 @@ main {
 }
 
 #chart {
-  width: 100%;
+  width: min(1100px, 100%);
+  margin: 0 auto;
 }
 
 html, body {
@@ -398,14 +400,22 @@ html, body {
   .timeline-section {
     padding: 0 1rem 1rem;
   }
-}
 
-.metric-wrapper{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  margin-top: 4px;
-  position:relative;
+  .chart-controls {
+      grid-template-columns: 1fr;
+    }
+
+    #zone-select,
+    #category-select,
+    #metric-select,
+    #metric-description {
+      grid-column: 1;
+      grid-row: auto;
+    }
+
+    #metric-description {
+      max-width: none;
+    }
 }
 
 .metric-info{
@@ -431,11 +441,75 @@ html, body {
   z-index:10;
 }
 
+.chart-controls {
+  width: min(1100px, 100%);
+  margin: 0 auto 0.75rem;
+  padding: 0 0.75rem;
+  display: grid;
+  grid-template-columns: 180px 260px minmax(280px, 340px) 1fr;
+  gap: 0.75rem 0.9rem;
+  align-items: start;
+}
+
+#zone-select {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+#category-select {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+#metric-select {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+#metric-description {
+  grid-column: 1 / 4;
+  grid-row: 2;
+}
+
+.chart-controls select {
+  width: 100%;
+  background-color: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  padding: 0.65rem 2.4rem 0.65rem 0.8rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: #111;
+  min-height: 42px;
+  border-radius: 0;
+  box-shadow: none;
+
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  background-image:
+    linear-gradient(45deg, transparent 50%, #333 50%),
+    linear-gradient(135deg, #333 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 3px),
+    calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.chart-controls select:focus {
+  outline: none;
+  border-color: #111;
+}
+
 .metric-description {
-  margin-top: 8px;
-  max-width: 440px;
+  max-width: 520px;
+  min-height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.9rem 1rem 0.85rem;
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.5;
   color: #555;
 }
 
