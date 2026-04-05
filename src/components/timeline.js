@@ -4,6 +4,8 @@ const chartEl = document.getElementById('chart')
 
 if (chartEl) {
 
+let xCurrent = null
+
 const margin = {
   top: 20,
   right: 20,
@@ -71,7 +73,9 @@ function getAdaptiveAxis(scale) {
 
 function zoomed(event) {
   const transform = event.transform
+
   const newX = transform.rescaleX(x)
+  xCurrent = transform.rescaleX(x)
 
   gx.call(getAdaptiveAxis(newX))
 
@@ -345,6 +349,8 @@ async function loadData() {
     )
     if (!countryData) return
 
+    countryData.sort((a, b) => d3.ascending(a.date, b.date));
+
   const height = +svg.attr('height')
   y = d3.scaleLinear()
     .domain(d3.extent(countryData, d => +d[metricKey]))
@@ -362,6 +368,69 @@ async function loadData() {
       .attr('stroke', '#34C759')
       .attr('stroke-width', 1.5)
       .attr('d', metricLine(countryData))
+
+    const hoverPath = svg.select('.g-metrics')
+      .append('path')
+      .datum(countryData)
+      .attr('class', 'metrics-line-hover')
+      .attr('fill', 'none')
+      .attr('stroke', 'transparent')
+      .attr('stroke-width', 20)
+      .attr('d', metricLine)
+      .style('pointer-events', 'stroke');
+
+    const crosshair = svg.select('.g-metrics')
+      .append('line')
+      .attr('class', 'crosshair')
+      .attr('stroke', '#999')
+      .attr('stroke-dasharray', '3,3')
+      .attr('stroke-width', 1)
+      .attr('y1', 0)
+      .attr('y2', +svg.attr('height') - margin.bottom)
+      .style('opacity', 0)
+
+    const bisectDate = d3.bisector(d => d.date).left
+
+    hoverPath
+      .on('mousemove', function(event) {
+        const scale = xCurrent || x;
+        const [mouseX] = d3.pointer(event, svg.node());
+        const mouseDate = scale.invert(mouseX);
+
+        const idx = bisectDate(countryData, mouseDate);
+        const d0 = countryData[idx - 1];
+        const d1 = countryData[idx];
+        const d =
+          !d0 ? d1 :
+          !d1 ? d0 :
+          (mouseDate - d0.date > d1.date - mouseDate ? d1 : d0);
+
+        if (!d) return;
+
+        const cx = scale(d.date);
+
+        crosshair
+          .style('opacity', 1)
+          .attr('x1', cx)
+          .attr('x2', cx);
+
+        d3.select('#tooltip')
+          .style('opacity', 1)
+          .style('left', (event.pageX + 14) + 'px')
+          .style('top', (event.pageY - 10) + 'px')
+          .html(`
+            <div class="tt-head">${d.country} · ${d.year}</div>
+            <div class="tt-row"><span>Price/Income</span><span class="tt-val">${(+d.price_to_income_ratio).toFixed(1)}</span></div>
+            <div class="tt-row"><span>Affordability</span><span class="tt-val">${(+d.affordability_index).toFixed(2)}</span></div>
+            <div class="tt-row"><span>Mortgage %</span><span class="tt-val">${(+d.mortgage_as_percentage_of_income).toFixed(1)}%</span></div>
+            <div class="tt-row"><span>Rental Yield</span><span class="tt-val">${(+d.gross_rental_yield_city_centre).toFixed(1)}%</span></div>
+            <div class="tt-row"><span>Price/Rent</span><span class="tt-val">${(+d.price_to_rent_ratio_city_centre).toFixed(1)}</span></div>
+          `);
+      })
+      .on('mouseleave', function() {
+        crosshair.style('opacity', 0);
+        d3.select('#tooltip').style('opacity', 0);
+      });
   }
 
   renderMetrics(metrics)
