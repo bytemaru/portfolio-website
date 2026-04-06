@@ -2,6 +2,8 @@
 const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+
 module.exports = {
   entry: "./src/index.js",              // твой главный JS-файл
   output: {
@@ -45,10 +47,15 @@ module.exports = {
     new HtmlWebpackPlugin({
       template: "./public/index.html",  // твой html-шаблон
     }),
-  new HtmlWebpackPlugin({
-    template: "./public/storytelling.html",
-    filename: "storytelling.html",
-  }),
+    new HtmlWebpackPlugin({
+      template: "./public/storytelling.html",
+      filename: "storytelling.html",
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: "public/data", to: "data" },
+      ],
+    }),
   ],
   resolve: {
     extensions: [".js"],                // чтобы можно было писать import без расширения
