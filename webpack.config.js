@@ -9,7 +9,7 @@ module.exports = {
     filename: "bundle.js",
     clean: true,                        // очищает dist перед сборкой
   },
-  mode: "development",                  // можно поменять на "production"
+  mode: "production",
   devServer: {
   static: [
     { directory: path.join(__dirname, 'dist') },
