@@ -2,10 +2,10 @@ import {getJobAtDate} from "../data/jobs.js"
 
 export function renderCards(date) {
   const job = getJobAtDate(date)
-  if (!job) return
+  if (!job) return false
 
   document.getElementById('card-date').textContent =
-    job.startDate.getFullYear() + ' – ' + job.endDate.getFullYear()
+    job.startDate.getFullYear() + ' – ' + (job.endDate ? job.endDate.getFullYear() : 'Present')
 
   document.getElementById('card-title').textContent = job.title
   document.getElementById('card-body').textContent = job.description
@@ -20,4 +20,5 @@ export function renderCards(date) {
   link.href = job.projectUrl
   link.textContent = job.projectLabel
 
+  return true
 }

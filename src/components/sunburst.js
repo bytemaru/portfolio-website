@@ -1,8 +1,8 @@
 import * as d3 from 'd3'
 import { skills } from '../data/skills.js'
 
-const width = 600
-const radius = width / 2
+const size = 600
+const radius = size / 2
 
 const root = d3.hierarchy(skills)
   .sum(d => d.children ? 0 : 1)
@@ -24,8 +24,11 @@ const color = d3.scaleOrdinal()
 
 const svg = d3.select('#sunburst')
   .append('svg')
-  .attr('width', width)
-  .attr('height', width)
+  .attr('viewBox', `0 0 ${size} ${size}`)
+  .attr('preserveAspectRatio', 'xMidYMid meet')
+  .style('width', '100%')
+  .style('height', 'auto')
+  .style('display', 'block')
   .append('g')
   .attr('transform', `translate(${radius},${radius})`)
 
