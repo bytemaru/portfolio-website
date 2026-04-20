@@ -45,7 +45,7 @@ const jobs = [
     },
       {
           startDate: new Date("2025-08-01"),
-          endDate: new Date(),
+          endDate: null,
           title: "Data Engineer",
           company: "Datasing NZ",
           companyLink: "https://www.datasing.nz/about/",
@@ -58,7 +58,7 @@ const jobs = [
 
 export function getJobAtDate(date) {
   return jobs.find(job =>
-    date >= job.startDate && date <= job.endDate
+    date >= job.startDate && (job.endDate === null || date <= job.endDate)
   )
 }
 

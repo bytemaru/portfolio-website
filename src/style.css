@@ -15,6 +15,8 @@ header {
   z-index: 200;
 }
 
+.header-links { display: flex; flex-direction: row; gap: 1rem; }
+
 nav {
   position: fixed;
   top: 0;
@@ -44,6 +46,14 @@ nav a, .header-links a {
 nav a:hover,
 .header-links a:hover {
   text-decoration: underline;
+}
+
+.link-icon { display: none; }
+.link-text { display: inline; }
+
+@media (max-width: 600px) {
+  .link-icon { display: block; }
+  .link-text { display: none; }
 }
 
 .site-title {
@@ -126,6 +136,14 @@ body {
     grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     padding: 2rem;
+    visibility: hidden;
+    opacity: 0;
+}
+
+.cards--ready {
+    visibility: visible;
+    opacity: 1;
+    transition: opacity 0.2s ease;
 }
 
 .card {
@@ -238,14 +256,20 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
+  padding: 0rem;
 }
 
 .section-label {
-  padding: 2rem;
+  padding: 0.5rem 2rem 1rem;
+}
+
+#sunburst {
+  width: 600px;
+  max-width: 100%;
 }
 
 #sunburst svg {
+  max-width: 600px;
   overflow: visible;
 }
 
@@ -383,6 +407,18 @@ html, body {
 .story-source a:hover {
   opacity: 0.7;
 }
+
+@media (max-width: 600px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  /* Hide tools/project card on mobile — job card only */
+  .cards .card:nth-child(2) {
+    display: none;
+  }
+}
+
 
 @media (max-width: 900px) {
   .story-meta {
